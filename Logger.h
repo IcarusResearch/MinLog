@@ -85,8 +85,6 @@ const inline Level Level::LEVEL_WARN("WARN", Color::yellow);
 const inline Level Level::LEVEL_ERROR("ERROR", Color::lightRed);
 
 inline void Log(CONST Level level, PCCH szSource, PCCH szFormat, ...) {
-	static std::mutex logMutex;
-	std::lock_guard<std::mutex> lock(logMutex);
 	va_list args;
 	va_start(args, szFormat);
 	CHAR msg[MAX_LOG_LEN];
