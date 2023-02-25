@@ -109,7 +109,7 @@ inline void Log(CONST Level level, PCCH szSource, PCCH szFormat, ...) {
 		szMsg.insert(0, 1, COLOR_FORMAT_CHAR);
 	}
 	while ((pos = szMsg.find(COLOR_FORMAT_CHAR, pos)) != std::string::npos) {
-		if (pos + 1 < szMsg.length() && isalpha(szMsg[pos + 1])) {
+		if (pos + 1 < szMsg.length() && isalnum(szMsg[pos + 1])) {
 			SIZE_T next_pos = szMsg.find(COLOR_FORMAT_CHAR, pos + 1);
 			std::string sub = szMsg.substr(pos + 2, next_pos - pos - 2);
 			auto itr = charToColor.find(szMsg[pos + 1]);
