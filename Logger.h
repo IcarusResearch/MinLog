@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <ctime>
+#include <tchar.h>
 #include <string>
 #include <iomanip>
 #include <iostream>
@@ -15,6 +16,20 @@
 #define LOG_LEVEL_ERROR
 #endif
 
+#ifdef UNICODE
+#define tostream std::wostream
+#define tstring std::wstring
+#define tcout std::wcout
+#define vsntprintf _vsnwprintf_s
+#define tcslen wcslen
+#else
+#define tostream std::ostream
+#define tstring std::string
+#define tcout std::cout
+#define vsntprintf vsnprintf
+#define tcslen strlen
+#endif
+
 static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
 class Color {
@@ -23,7 +38,7 @@ private:
 public:
 	Color(int color) : color(color) {}
 
-	friend std::ostream& operator << (std::ostream& os, const Color& c) {
+	friend tostream& operator << (tostream& os, const Color& c) {
 		SetConsoleTextAttribute(hConsole, c.color);
 		return os;
 	}
@@ -34,12 +49,12 @@ public:
 
 class Level {
 private:
-	std::string name;
+	tstring name;
 	Color color;
 public:
-	Level(std::string name, Color color) : name(name), color(color) {}
+	Level(tstring name, Color color) : name(name), color(color) {}
 
-	friend std::ostream& operator << (std::ostream& os, const Level& level) {
+	friend tostream& operator << (tostream& os, const Level& level) {
 		return os << level.color << level.name << std::setw(8 - level.name.length()) << Color::gray;
 	}
 
@@ -61,7 +76,7 @@ const inline Color Color::lightYellow(FOREGROUND_RED | FOREGROUND_GREEN | FOREGR
 const inline Color Color::lightPurple(FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 const inline Color Color::lightCyan(FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 
-static const std::map<char, Color> charToColor {
+static const std::map<TCHAR, Color> charToColor{
 	{'a', Color::red},
 	{'b', Color::green},
 	{'c', Color::blue},
@@ -79,30 +94,30 @@ static const std::map<char, Color> charToColor {
 	{'6', Color::lightCyan},
 };
 
-const inline Level Level::LEVEL_DEBUG("DEBUG", Color::lightCyan);
-const inline Level Level::LEVEL_INFO("INFO", Color::lightGreen);
-const inline Level Level::LEVEL_WARN("WARN", Color::yellow);
-const inline Level Level::LEVEL_ERROR("ERROR", Color::lightRed);
+const inline Level Level::LEVEL_DEBUG(_T("DEBUG"), Color::lightCyan);
+const inline Level Level::LEVEL_INFO(_T("INFO"), Color::lightGreen);
+const inline Level Level::LEVEL_WARN(_T("WARN"), Color::yellow);
+const inline Level Level::LEVEL_ERROR(_T("ERROR"), Color::lightRed);
 
-inline void Log(CONST Level level, PCCH szSource, PCCH szFormat, ...) {
+inline void Log(CONST Level level, PCTCH szSource, PCTCH szFormat, ...) {
 	va_list args;
 	va_start(args, szFormat);
-	CHAR msg[MAX_LOG_LEN];
-	vsnprintf(msg, MAX_LOG_LEN, szFormat, args);
+	TCHAR msg[MAX_LOG_LEN];
+	vsntprintf(msg, MAX_LOG_LEN, szFormat, args);
 	va_end(args);
-	std::string szMsg(msg);
+	tstring szMsg(msg);
 	time_t currentTime = time(nullptr);
 	tm localTime;
 	localtime_s(&localTime, &currentTime);
-	std::cout << std::dec << Color::gray << "["
-		<< Color::white << std::setw(2) << std::setfill('0') << localTime.tm_hour << std::setfill(' ')
-		<< Color::gray << ":"
-		<< Color::white << std::setw(2) << std::setfill('0') << localTime.tm_min << std::setfill(' ')
-		<< Color::gray << ":"
-		<< Color::white << std::setw(2) << std::setfill('0') << localTime.tm_sec << std::setfill(' ')
-		<< Color::gray << "] "
-		<< Color::white << szSource << std::setw(15 - strlen(szSource))
-		<< Color::gray << " - " << level << Color::gray << " - ";
+	tcout << Color::gray << _T("[")
+		<< Color::white << std::setw(2) << std::setfill(_T('0')) << localTime.tm_hour << std::setfill(_T(' '))
+		<< Color::gray << _T(":")
+		<< Color::white << std::setw(2) << std::setfill(_T('0')) << localTime.tm_min << std::setfill(_T(' '))
+		<< Color::gray << _T(":")
+		<< Color::white << std::setw(2) << std::setfill(_T('0')) << localTime.tm_sec << std::setfill(_T(' '))
+		<< Color::gray << _T("] ")
+		<< Color::white << szSource << std::setw(15 - tcslen(szSource))
+		<< Color::gray << _T(" - ") << level << Color::gray << _T(" - ");
 	SIZE_T pos = 0;
 	if (szMsg.size() >= 1 && szMsg[0] != COLOR_FORMAT_CHAR) {
 		szMsg.insert(0, 1, DEFAULT_COLOR);
@@ -111,12 +126,12 @@ inline void Log(CONST Level level, PCCH szSource, PCCH szFormat, ...) {
 	while ((pos = szMsg.find(COLOR_FORMAT_CHAR, pos)) != std::string::npos) {
 		if (pos + 1 < szMsg.length() && isalnum(szMsg[pos + 1])) {
 			SIZE_T next_pos = szMsg.find(COLOR_FORMAT_CHAR, pos + 1);
-			std::string sub = szMsg.substr(pos + 2, next_pos - pos - 2);
+			tstring sub = szMsg.substr(pos + 2, next_pos - pos - 2);
 			auto itr = charToColor.find(szMsg[pos + 1]);
 			if (itr == charToColor.end()) {
-				std::cout << sub;
+				tcout << sub;
 			} else {
-				std::cout << charToColor.find(szMsg[pos + 1])->second << sub;
+				tcout << charToColor.find(szMsg[pos + 1])->second << sub;
 			}
 			pos = next_pos;
 		} else {
