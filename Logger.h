@@ -34,6 +34,7 @@ typedef WCHAR TXTCHAR;
 #define TXT(str) str
 typedef LPCCH __PCTCH;
 typedef CHAR TXTCHAR;
+typename StringType::size_type pos = 0;
 #endif
 
 static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -83,21 +84,21 @@ const inline Color Color::lightPurple(FOREGROUND_RED | FOREGROUND_BLUE | FOREGRO
 const inline Color Color::lightCyan(FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 
 static const std::map<TCHAR, Color> charToColor{
-	{'a', Color::red},
-	{'b', Color::green},
-	{'c', Color::blue},
-	{'d', Color::yellow},
-	{'e', Color::purple},
-	{'f', Color::cyan},
-	{'g', Color::white},
-	{'h', Color::gray},
+	{TXT('a'), Color::red},
+	{TXT('b'), Color::green},
+	{TXT('c'), Color::blue},
+	{TXT('d'), Color::yellow},
+	{TXT('e'), Color::purple},
+	{TXT('f'), Color::cyan},
+	{TXT('g'), Color::white},
+	{TXT('h'), Color::gray},
 
-	{'1', Color::lightRed},
-	{'2', Color::lightGreen},
-	{'3', Color::lightBlue},
-	{'4', Color::lightYellow},
-	{'5', Color::lightPurple},
-	{'6', Color::lightCyan},
+	{TXT('1'), Color::lightRed},
+	{TXT('2'), Color::lightGreen},
+	{TXT('3'), Color::lightBlue},
+	{TXT('4'), Color::lightYellow},
+	{TXT('5'), Color::lightPurple},
+	{TXT('6'), Color::lightCyan},
 };
 
 const inline Level Level::LEVEL_DEBUG(TXT("DEBUG"), Color::lightCyan);
@@ -124,20 +125,26 @@ inline void Log(CONST Level level, __PCTCH szSource, __PCTCH szFormat, ...) {
 		<< Color::gray << TXT("] ")
 		<< Color::white << szSource << std::setw(15 - tcslen(szSource))
 		<< Color::gray << TXT(" - ") << level << Color::gray << TXT(" - ");
-	SIZE_T pos = 0;
+	tstring::size_type pos = 0;
 	if (szMsg.size() >= 1 && szMsg[0] != COLOR_FORMAT_CHAR) {
 		szMsg.insert(0, 1, DEFAULT_COLOR);
 		szMsg.insert(0, 1, COLOR_FORMAT_CHAR);
 	}
-	while ((pos = szMsg.find(COLOR_FORMAT_CHAR, pos)) != std::string::npos) {
+	while ((pos = szMsg.find(COLOR_FORMAT_CHAR, pos)) != tstring::npos) {
 		if (pos + 1 < szMsg.length() && isalnum(szMsg[pos + 1])) {
-			SIZE_T next_pos = szMsg.find(COLOR_FORMAT_CHAR, pos + 1);
-			tstring sub = szMsg.substr(pos + 2, next_pos - pos - 2);
+			tstring::size_type next_pos = szMsg.find(COLOR_FORMAT_CHAR, pos + 1);
+			tstring sub;
+			if (next_pos == tstring::npos) {
+				sub = szMsg.substr(pos + 2);
+			}
+			else {
+				sub = szMsg.substr(pos + 2, next_pos - pos - 2);
+			}
 			auto itr = charToColor.find(szMsg[pos + 1]);
 			if (itr == charToColor.end()) {
 				tcout << sub;
 			} else {
-				tcout << charToColor.find(szMsg[pos + 1])->second << sub;
+				tcout << itr->second << sub;
 			}
 			pos = next_pos;
 		} else {
