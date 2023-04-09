@@ -34,7 +34,6 @@ typedef WCHAR TXTCHAR;
 #define TXT(str) str
 typedef LPCCH __PCTCH;
 typedef CHAR TXTCHAR;
-typename StringType::size_type pos = 0;
 #endif
 
 static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
